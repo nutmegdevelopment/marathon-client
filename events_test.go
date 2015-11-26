@@ -2,11 +2,14 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
 )
+
+//
+// Tests for Marathon API support
+//
 
 var api_post_event = `{
   "eventType": "api_post_event",
@@ -349,13 +352,13 @@ func init() {
 	re = regexp.MustCompile(`[\n\t ]`)
 }
 
-func runEvent(name string) (Event, error) {
-	var e Event
-	err := e.Unmarshal(
-		fmt.Sprintf(
-			"event: %s\ndata: %s\n",
-			name,
-			re.ReplaceAllString(event_tests[name], "")))
+func runEvent(name string) (e Event, err error) {
+
+	var in RawEvent
+	in.Name = name
+	in.Data = []byte(re.ReplaceAllString(event_tests[name], ""))
+
+	err = e.Unmarshal(in)
 
 	if err != nil {
 		return e, err

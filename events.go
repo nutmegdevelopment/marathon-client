@@ -3,14 +3,18 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"regexp"
+	"strings"
 	"time"
 )
 
-var eventMatch *regexp.Regexp
+//
+// Marathon API support
+//
 
-func init() {
-	eventMatch = regexp.MustCompile(`(event|data): ([[:graph:]]+)`)
+// Raw event from the SSE stream
+type RawEvent struct {
+	Name string
+	Data []byte
 }
 
 type PathId string
@@ -139,53 +143,51 @@ type MesosStatusUpdateEvent struct {
 	EventCommon
 }
 
-func (e *Event) Unmarshal(in string) (err error) {
+func (e *Event) Unmarshal(in RawEvent) (err error) {
 
-	data := eventMatch.FindAllStringSubmatch(in, -1)
-	if len(data) != 2 || len(data[0]) < 3 || len(data[1]) < 3 {
+	if in.Name == "" || len(in.Data) == 0 {
 		return errors.New("Bad event object")
 	}
 
-	e.Name = data[0][2]
-	payload := []byte(data[1][2])
+	e.Name = strings.TrimRight(in.Name, "\r\n")
 
 	switch e.Name {
 
 	case "api_post_event":
-		err = json.Unmarshal(payload, &e.ApiPostEvent)
+		err = json.Unmarshal(in.Data, &e.ApiPostEvent)
 
 	case "add_health_check_event":
-		err = json.Unmarshal(payload, &e.AddHealthCheck)
+		err = json.Unmarshal(in.Data, &e.AddHealthCheck)
 
 	case "failed_health_check_event":
-		err = json.Unmarshal(payload, &e.FailedHealthCheck)
+		err = json.Unmarshal(in.Data, &e.FailedHealthCheck)
 
 	case "health_status_changed_event":
-		err = json.Unmarshal(payload, &e.HealthStatusChanged)
+		err = json.Unmarshal(in.Data, &e.HealthStatusChanged)
 
 	case "group_change_success":
-		err = json.Unmarshal(payload, &e.GroupChangeSuccess)
+		err = json.Unmarshal(in.Data, &e.GroupChangeSuccess)
 
 	case "group_change_failed":
-		err = json.Unmarshal(payload, &e.GroupChangeFailed)
+		err = json.Unmarshal(in.Data, &e.GroupChangeFailed)
 
 	case "deployment_success":
-		err = json.Unmarshal(payload, &e.DeploymentStatus)
+		err = json.Unmarshal(in.Data, &e.DeploymentStatus)
 
 	case "deployment_failed":
-		err = json.Unmarshal(payload, &e.DeploymentStatus)
+		err = json.Unmarshal(in.Data, &e.DeploymentStatus)
 
 	case "deployment_info":
-		err = json.Unmarshal(payload, &e.DeploymentStatus)
+		err = json.Unmarshal(in.Data, &e.DeploymentStatus)
 
 	case "deployment_step_success":
-		err = json.Unmarshal(payload, &e.DeploymentStatus)
+		err = json.Unmarshal(in.Data, &e.DeploymentStatus)
 
 	case "deployment_step_failure":
-		err = json.Unmarshal(payload, &e.DeploymentStatus)
+		err = json.Unmarshal(in.Data, &e.DeploymentStatus)
 
 	case "status_update_event":
-		err = json.Unmarshal(payload, &e.MesosStatusUpdateEvent)
+		err = json.Unmarshal(in.Data, &e.MesosStatusUpdateEvent)
 
 	default:
 		err = errors.New("Unhandled event")
