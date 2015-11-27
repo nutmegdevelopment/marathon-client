@@ -7,11 +7,14 @@ import (
 
 var (
 	url, file *string
+	debug     bool
 )
 
 func init() {
 	url = flag.String("m", "", "Marathon URL")
 	file = flag.String("f", "", "Job file")
+	flag.BoolVar(&debug, "d", false, "Debug output")
+
 }
 
 func eventBus(in <-chan RawEvent, out chan<- Event) {

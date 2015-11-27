@@ -399,6 +399,7 @@ func TestAddHealthCheckEvent(t *testing.T) {
 
 	assert.Equal(t, "add_health_check_event", e.AddHealthCheck.EventType)
 	assert.Equal(t, "/health", e.AddHealthCheck.HealthCheck["path"])
+	assert.Equal(t, "/my-app", e.AddHealthCheck.AppId)
 }
 
 func TestRemoveHealthCheckEvent(t *testing.T) {
@@ -414,6 +415,7 @@ func TestFailedHealthCheckEvent(t *testing.T) {
 
 	assert.Equal(t, "failed_health_check_event", e.FailedHealthCheck.EventType)
 	assert.Equal(t, "/health", e.FailedHealthCheck.HealthCheck["path"])
+	assert.Equal(t, "/my-app", e.FailedHealthCheck.AppId)
 }
 
 func TestHealthCheckStatusChangedEvent(t *testing.T) {
@@ -423,6 +425,7 @@ func TestHealthCheckStatusChangedEvent(t *testing.T) {
 	}
 
 	assert.Equal(t, "health_status_changed_event", e.HealthStatusChanged.EventType)
+	assert.Equal(t, "/my-app", e.HealthStatusChanged.AppId)
 }
 
 func TestGroupChangeSuccessEvent(t *testing.T) {

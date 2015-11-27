@@ -17,8 +17,6 @@ type RawEvent struct {
 	Data []byte
 }
 
-type PathId string
-
 type Timestamp string
 
 func (t Timestamp) String() string {
@@ -73,21 +71,21 @@ type ApiPostEvent struct {
 
 // Health check events
 type AddHealthCheck struct {
-	AppId       PathId
+	AppId       string
 	Version     Timestamp
 	HealthCheck map[string]interface{}
 	EventCommon
 }
 
 type FailedHealthCheck struct {
-	AppId       PathId
+	AppId       string
 	TaskId      string
 	HealthCheck map[string]interface{}
 	EventCommon
 }
 
 type HealthStatusChanged struct {
-	AppId   PathId
+	AppId   string
 	TaskId  string
 	Version Timestamp
 	Alive   bool
@@ -96,37 +94,40 @@ type HealthStatusChanged struct {
 
 // Group events
 type GroupChangeSuccess struct {
-	GroupId PathId
+	GroupId string
 	Version string
 	EventCommon
 }
 
 type GroupChangeFailed struct {
-	GroupId PathId
+	GroupId string
 	Version string
 	Reason  string
 	EventCommon
 }
 
-// Deployment events
-type DeploymentStep struct {
-	Actions []struct {
-		Type string
-		App  PathId
-	}
+type Action struct {
+	Action string
+	App    string
 }
 
 type DeploymentPlan struct {
 	Id       string
 	Original map[string]interface{}
 	Target   map[string]interface{}
-	Steps    []DeploymentStep
+	Steps    []Action
 	Version  Timestamp
 }
 
 type DeploymentStatus struct {
-	Id   string
-	Plan DeploymentPlan
+	Id          string
+	Plan        DeploymentPlan
+	CurrentStep struct {
+		Actions []struct {
+			Type string
+			App  string
+		}
+	}
 	EventCommon
 }
 
@@ -136,7 +137,7 @@ type MesosStatusUpdateEvent struct {
 	TaskId     string
 	TaskStatus string
 	Message    string
-	AppId      PathId
+	AppId      string
 	Host       string
 	Ports      []int
 	Version    string
