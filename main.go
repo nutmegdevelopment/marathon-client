@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"log"
 )
@@ -15,36 +14,33 @@ func init() {
 	file = flag.String("f", "", "Job file")
 }
 
-func eventHandler(ch <-chan RawEvent) (result string, err error) {
+func eventBus(in <-chan RawEvent, out chan<- Event) {
+
+	defer close(out)
 
 	for {
 
 		select {
 
-		case in, ok := <-ch:
+		case in, ok := <-in:
 			if !ok {
-				err = errors.New("Error: event channel closed")
 				break
 			}
-			log.Println("RAW INPUT:")
-			log.Println(in.Name)
-			log.Println(string(in.Data))
+
 			e := new(Event)
-			err = e.Unmarshal(in)
+			err := e.Unmarshal(in)
 
 			switch {
 
 			case err != nil && err.Error() == "Unhandled event":
-				log.Println(err)
 				continue
 
 			case err != nil:
-				break
+				log.Println("Error parsing event:", err, in.Data)
+				continue
 
 			default:
-				log.Println("\n\n")
-				log.Println(e)
-				log.Println("\n\n")
+				out <- *e
 
 			}
 		}
@@ -59,18 +55,15 @@ func main() {
 		log.Fatal("Marathon URL (-m) is required")
 	}
 
-	events := make(chan RawEvent)
-	err := EventListener(*url, events)
+	raw := make(chan RawEvent, 64)
+	parsed := make(chan Event, 64)
+	err := EventListener(*url, raw)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go eventBus(raw, parsed)
 
 	// Do POST request here
-
-	res, err := eventHandler(events)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(res)
 
 }
