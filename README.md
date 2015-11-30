@@ -13,3 +13,8 @@ Usage of ./marathon-client:
 | -p   | Password for basic auth |
 
 Note that Job file can be set to "-" to read from STDIN.
+
+Examples:
+```
+marathon-client -f job.json -m marathon.mydomain:8080 -u user -p pass
+cat job.json | marathon-client -f - -m marathon.mydomain:8080

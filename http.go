@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 )
@@ -132,11 +133,17 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 	switch resp.StatusCode {
 	// Existing job found, update it
 	case 200:
+		if debug {
+			log.Println("Existing job found, updating")
+		}
 		method = "PUT"
 		jobUrl += job.Id()
 
 	// New job
 	case 404:
+		if debug {
+			log.Println("Creating new job")
+		}
 		method = "POST"
 
 	// Error, abort
