@@ -133,11 +133,13 @@ func TestDeployApplication(t *testing.T) {
 
 			if r.URL.Path == appEndPoint {
 				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(201)
 				w.Write(deploymentResponse)
 			}
 
 			if r.URL.Path == groupEndPoint {
 				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(201)
 				w.Write(deploymentResponse)
 			}
 

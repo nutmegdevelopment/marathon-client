@@ -149,7 +149,7 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		err = errors.New(resp.Status)
 		return
 	}
