@@ -9,5 +9,7 @@ Usage of ./marathon-client:
 | -d   | Debug output |
 | -f   | Job file     | 
 | -m   | Marathon URL |
+| -u   | Username for basic auth |
+| -p   | Password for basic auth |
 
 Note that Job file can be set to "-" to read from STDIN.

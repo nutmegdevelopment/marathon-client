@@ -10,14 +10,22 @@ import (
 )
 
 var (
-	url, file *string
-	debug     bool
+	url, file    string
+	user, pass   string
+	debug        bool = false
+	authenticate bool = false
 )
 
 func init() {
-	url = flag.String("m", "", "Marathon URL")
-	file = flag.String("f", "", "Job file")
+	flag.StringVar(&url, "m", "", "Marathon URL")
+	flag.StringVar(&file, "f", "", "Job file")
+	flag.StringVar(&user, "u", "", "Username for basic auth")
+	flag.StringVar(&pass, "p", "", "Password for basic auth")
 	flag.BoolVar(&debug, "d", false, "Debug output")
+
+	if user != "" && pass != "" {
+		authenticate = true
+	}
 
 	flag.Parse()
 }
@@ -101,21 +109,26 @@ func (j Job) Data() ([]byte, error) {
 }
 
 func main() {
-	if *url == "" {
+	if url == "" {
 		log.Fatal("Marathon URL (-m) is required")
 	}
 
-	if *file == "" {
+	if url[0:4] != "http" {
+		// default to http
+		url = "http://" + url
+	}
+
+	if file == "" {
 		log.Fatal("Marathon job (-f) is required")
 	}
 
 	var data []byte
 	var err error
 
-	if *file == "-" {
+	if file == "-" {
 		data, err = ioutil.ReadAll(os.Stdin)
 	} else {
-		data, err = ioutil.ReadFile(*file)
+		data, err = ioutil.ReadFile(file)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -133,7 +146,7 @@ func main() {
 	defer close(events)
 	defer close(rawEvents)
 
-	err = EventListener(*url, rawEvents)
+	err = EventListener(url, rawEvents)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -142,13 +155,13 @@ func main() {
 	go eventBus(rawEvents, events)
 
 	// Start listening for events
-	err = EventListener(*url, rawEvents)
+	err = EventListener(url, rawEvents)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create the deployment job
-	id, err := DeployApplication(*url, job)
+	id, err := DeployApplication(url, job)
 	if err != nil {
 		log.Fatal(err)
 	}

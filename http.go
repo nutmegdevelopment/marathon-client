@@ -39,6 +39,10 @@ func EventListener(url string, ch chan<- RawEvent) (err error) {
 	}
 	req.Header.Add("Accept", "text/event-stream")
 
+	if authenticate {
+		req.SetBasicAuth(user, pass)
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		close(ch)
@@ -110,6 +114,10 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
+	if authenticate {
+		req.SetBasicAuth(user, pass)
+	}
+
 	var method string
 
 	resp, err := client.Do(req)
@@ -143,6 +151,10 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
+	if authenticate {
+		req.SetBasicAuth(user, pass)
+	}
 
 	resp, err = client.Do(req)
 	if err != nil {
