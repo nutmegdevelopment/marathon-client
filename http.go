@@ -89,9 +89,14 @@ func EventListener(url string, ch chan<- RawEvent) (err error) {
 
 }
 
-// We are only interested in the deploymentId of the response
+// We are only interested in the deploymentId of the response.
+// Unfortunately, the marathon API is very inconsistent, and the
+// response we get varies.
 type Response struct {
 	DeploymentId string
+	Deployments  []struct {
+		Id string
+	}
 }
 
 func DeployApplication(url string, job Job) (deploymentId string, err error) {
@@ -175,8 +180,19 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 	var r Response
 
 	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return
+	}
 
-	deploymentId = r.DeploymentId
+	switch {
+	case r.DeploymentId != "":
+		deploymentId = r.DeploymentId
+	case len(r.Deployments) >= 1:
+		deploymentId = r.Deployments[0].Id
+	default:
+		err = errors.New("No deployment ID detected in response")
+	}
+
 	return
 
 }

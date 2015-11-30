@@ -81,7 +81,8 @@ func TestDeployApplication(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		deploymentResponse := []byte(`{"deploymentId": "867ed450-f6a8-4d33-9b0e-e11c5513990b"}`)
+		putResponse := []byte(`{"deploymentId": "867ed450-f6a8-4d33-9b0e-e11c5513990b"}`)
+		postResponse := []byte(`{"deployments":[{"id": "867ed450-f6a8-4d33-9b0e-e11c5513990b"}]}`)
 
 		// Ensure that the correct header is received
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -126,7 +127,7 @@ func TestDeployApplication(t *testing.T) {
 
 			if r.URL.Path == appEndPoint+"/old" {
 				w.Header().Set("Content-Type", "application/json")
-				w.Write(deploymentResponse)
+				w.Write(putResponse)
 			}
 
 		case "POST":
@@ -134,13 +135,13 @@ func TestDeployApplication(t *testing.T) {
 			if r.URL.Path == appEndPoint {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(201)
-				w.Write(deploymentResponse)
+				w.Write(postResponse)
 			}
 
 			if r.URL.Path == groupEndPoint {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(201)
-				w.Write(deploymentResponse)
+				w.Write(postResponse)
 			}
 
 		}

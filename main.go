@@ -23,11 +23,11 @@ func init() {
 	flag.StringVar(&pass, "p", "", "Password for basic auth")
 	flag.BoolVar(&debug, "d", false, "Debug output")
 
+	flag.Parse()
+
 	if user != "" && pass != "" {
 		authenticate = true
 	}
-
-	flag.Parse()
 }
 
 func eventBus(in <-chan RawEvent, out chan<- Event) {
