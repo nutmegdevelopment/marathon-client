@@ -143,7 +143,6 @@ func main() {
 	events := make(chan Event, 64)
 
 	// Exit cleanly
-	defer close(events)
 	defer close(rawEvents)
 
 	err = EventListener(url, rawEvents)
@@ -169,11 +168,11 @@ func main() {
 	dur, err := TrackDeployment(id, events)
 	if err != nil {
 		log.Println("Deployment failed")
-		log.Println("Duration:", dur.Seconds(), "seconds")
+		log.Printf("%s: %6.2f %s\n", "Duration", dur.Seconds(), "seconds")
 		log.Println("Reason:", err)
 		os.Exit(1)
 	} else {
 		log.Println("Deployment succeeded")
-		log.Println("Duration:", dur.Seconds(), "seconds")
+		log.Printf("%s: %6.2f %s\n", "Duration", dur.Seconds(), "seconds")
 	}
 }
