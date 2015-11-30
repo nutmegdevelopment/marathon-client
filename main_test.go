@@ -5,6 +5,33 @@ import (
 	"testing"
 )
 
+var testJson = `
+{
+	"id": "/product/service/myApp",
+	"cmd": "env && sleep 300",
+	"args": ["/bin/sh", "-c", "env && sleep 300"]
+}
+`
+
+var testBadJson = `
+{
+	"cmd": "env && sleep 300",
+	"args": ["/bin/sh", "-c", "env && sleep 300"]
+}
+`
+
+var testGroupJson = `
+{
+	"id": "/product",
+	"apps": [ 
+		{
+			"id":"/product/service",
+			"cmd": "env && sleep 300"
+		}
+	]
+}
+`
+
 func TestEventBus(t *testing.T) {
 
 	var raw RawEvent
@@ -29,6 +56,33 @@ func TestEventBus(t *testing.T) {
 		in <- raw
 		close(in)
 
+	}
+
+}
+
+func TestNewJob(t *testing.T) {
+
+	j, err := NewJob([]byte(testJson))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if j.IsGroup() {
+		t.Error("Should not be a group")
+	}
+
+	j, err = NewJob([]byte(testBadJson))
+	if err == nil {
+		t.Error("No error with missing ID")
+	}
+
+	j, err = NewJob([]byte(testGroupJson))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !j.IsGroup() {
+		t.Error("Should be a group", j)
 	}
 
 }

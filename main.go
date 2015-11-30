@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"flag"
+	"io/ioutil"
 	"log"
+	"os"
 )
 
 var (
@@ -15,6 +19,7 @@ func init() {
 	file = flag.String("f", "", "Job file")
 	flag.BoolVar(&debug, "d", false, "Debug output")
 
+	flag.Parse()
 }
 
 func eventBus(in <-chan RawEvent, out chan<- Event) {
@@ -52,21 +57,110 @@ func eventBus(in <-chan RawEvent, out chan<- Event) {
 	return
 }
 
+type Job map[string]interface{}
+
+func NewJob(data []byte) (j Job, err error) {
+	err = json.Unmarshal(data, &j)
+	if err != nil {
+		return
+	}
+	if _, ok := j["id"]; !ok {
+		err = errors.New("Missing ID")
+		return
+	}
+	switch j["id"].(type) {
+	case string:
+		return
+	default:
+		err = errors.New("Invalid JSON")
+		return
+	}
+}
+
+func (j Job) IsGroup() bool {
+	if _, ok := j["groups"]; ok {
+		return true
+	}
+	if _, ok := j["apps"]; ok {
+		return true
+	}
+	return false
+}
+
+func (j Job) Id() string {
+	id := j["id"]
+	if id.(string)[0] == '/' {
+		return id.(string)
+	} else {
+		return "/" + id.(string)
+	}
+}
+
+func (j Job) Data() ([]byte, error) {
+	return json.Marshal(&j)
+}
+
 func main() {
-	flag.Parse()
 	if *url == "" {
 		log.Fatal("Marathon URL (-m) is required")
 	}
 
-	raw := make(chan RawEvent, 64)
-	parsed := make(chan Event, 64)
-	err := EventListener(*url, raw)
+	if *file == "" {
+		log.Fatal("Marathon job (-f) is required")
+	}
+
+	var data []byte
+	var err error
+
+	if *file == "-" {
+		data, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		data, err = ioutil.ReadFile(*file)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go eventBus(raw, parsed)
+	job, err := NewJob(data)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Do POST request here
+	rawEvents := make(chan RawEvent, 64)
+	events := make(chan Event, 64)
 
+	// Exit cleanly
+	defer close(events)
+	defer close(rawEvents)
+
+	err = EventListener(*url, rawEvents)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Run the event bus
+	go eventBus(rawEvents, events)
+
+	// Start listening for events
+	err = EventListener(*url, rawEvents)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create the deployment job
+	id, err := DeployApplication(*url, job)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dur, err := TrackDeployment(id, events)
+	if err != nil {
+		log.Println("Deployment failed")
+		log.Println("Duration:", dur.Seconds(), "seconds")
+		log.Println("Reason:", err)
+		os.Exit(1)
+	} else {
+		log.Println("Deployment succeeded")
+		log.Println("Duration:", dur.Seconds(), "seconds")
+	}
 }

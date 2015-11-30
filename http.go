@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 )
@@ -11,6 +13,11 @@ import (
 //
 // HTTP sending and recieving
 //
+const (
+	eventEndPoint = "/v2/events"
+	groupEndPoint = "/v2/groups"
+	appEndPoint   = "/v2/apps"
+)
 
 var (
 	nameRexp, dataRexp *regexp.Regexp
@@ -25,7 +32,7 @@ func EventListener(url string, ch chan<- RawEvent) (err error) {
 
 	client := new(http.Client)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url+eventEndPoint, nil)
 	if err != nil {
 		close(ch)
 		return
@@ -75,5 +82,89 @@ func EventListener(url string, ch chan<- RawEvent) (err error) {
 	}()
 
 	return nil
+
+}
+
+// We are only interested in the deploymentId of the response
+type Response struct {
+	DeploymentId string
+}
+
+func DeployApplication(url string, job Job) (deploymentId string, err error) {
+
+	var jobUrl string
+
+	if job.IsGroup() {
+		jobUrl = url + groupEndPoint
+	} else {
+		jobUrl = url + appEndPoint
+	}
+
+	client := new(http.Client)
+
+	// Check if we should do a POST or PUT
+	req, err := http.NewRequest("GET", jobUrl+job.Id(), nil)
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	var method string
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	switch resp.StatusCode {
+	// Existing job found, update it
+	case 200:
+		method = "PUT"
+		jobUrl += job.Id()
+
+	// New job
+	case 404:
+		method = "POST"
+
+	// Error, abort
+	default:
+		err = errors.New(resp.Status)
+		return
+	}
+
+	data, err := job.Data()
+	if err != nil {
+		return
+	}
+
+	req, err = http.NewRequest(method, jobUrl, bytes.NewReader(data))
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		err = errors.New(resp.Status)
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var r Response
+
+	err = json.Unmarshal(body, &r)
+
+	deploymentId = r.DeploymentId
+	return
 
 }
