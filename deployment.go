@@ -131,12 +131,18 @@ func TrackDeployment(id string, events <-chan Event) (duration time.Duration, er
 			e.DeploymentStatus.Id == id:
 
 			end = e.DeploymentStatus.Timestamp.Time()
+			if start.Year() == 1 {
+				start = end
+			}
 			return end.Sub(start), nil
 
 		case e.Name == "deployment_failed" &&
 			e.DeploymentStatus.Id == id:
 
 			end = e.DeploymentStatus.Timestamp.Time()
+			if start.Year() == 1 {
+				start = end
+			}
 			err = fmt.Errorf("%s:\n%s", "Deployment failed", failures.print())
 			return end.Sub(start), err
 
