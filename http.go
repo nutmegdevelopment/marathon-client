@@ -8,16 +8,18 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
+	"time"
 )
 
 //
 // HTTP sending and recieving
 //
 const (
-	eventEndPoint = "/v2/events"
-	groupEndPoint = "/v2/groups"
-	appEndPoint   = "/v2/apps"
+	eventPath = "/v2/events"
+	groupPath = "/v2/groups"
+	appPath   = "/v2/apps"
 )
 
 var (
@@ -29,11 +31,17 @@ func init() {
 	dataRexp = regexp.MustCompile(`^data: ([[:graph:]]+)$`)
 }
 
-func EventListener(url string, ch chan<- RawEvent) (err error) {
+func EventListener(rawurl string, ch chan<- RawEvent) (err error) {
 
 	client := new(http.Client)
 
-	req, err := http.NewRequest("GET", url+eventEndPoint, nil)
+	eventUrl, err := url.Parse(rawurl)
+	if err != nil {
+		return
+	}
+	eventUrl.Path = eventPath
+
+	req, err := http.NewRequest("GET", eventUrl.String(), nil)
 	if err != nil {
 		close(ch)
 		return
@@ -56,8 +64,6 @@ func EventListener(url string, ch chan<- RawEvent) (err error) {
 	}
 
 	go func() {
-
-		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
 
@@ -100,20 +106,25 @@ type Response struct {
 	}
 }
 
-func DeployApplication(url string, job Job) (deploymentId string, err error) {
+func DeployApplication(rawurl string, job Job) (deploymentId string, err error) {
 
-	var jobUrl string
+	// var jobUrl string
+
+	jobUrl, err := url.Parse(rawurl)
+	if err != nil {
+		return
+	}
 
 	if job.IsGroup() {
-		jobUrl = url + groupEndPoint
+		jobUrl.Path = groupPath
 	} else {
-		jobUrl = url + appEndPoint
+		jobUrl.Path = appPath
 	}
 
 	client := new(http.Client)
 
 	// Check if we should do a POST or PUT
-	req, err := http.NewRequest("GET", jobUrl+job.Id(), nil)
+	req, err := http.NewRequest("GET", jobUrl.String()+job.Id(), nil)
 	if err != nil {
 		return
 	}
@@ -126,6 +137,10 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 
 	var method string
 
+	if !wait {
+		jobUrl.RawQuery = "force=true"
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return
@@ -137,7 +152,7 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 			log.Println("Existing job found, updating")
 		}
 		method = "PUT"
-		jobUrl += job.Id()
+		jobUrl.Path += job.Id()
 
 	// New job
 	case 404:
@@ -157,7 +172,7 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 		return
 	}
 
-	req, err = http.NewRequest(method, jobUrl, bytes.NewReader(data))
+	req, err = http.NewRequest(method, jobUrl.String(), bytes.NewReader(data))
 	if err != nil {
 		return
 	}
@@ -168,14 +183,31 @@ func DeployApplication(url string, job Job) (deploymentId string, err error) {
 		req.SetBasicAuth(user, pass)
 	}
 
-	resp, err = client.Do(req)
-	if err != nil {
-		return
-	}
+	for {
+		resp, err = client.Do(req)
+		if err != nil {
+			return
+		}
 
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
-		err = errors.New(resp.Status)
-		return
+		switch resp.StatusCode {
+
+		case 200:
+			break
+
+		case 201:
+			break
+
+		case 409:
+			if wait {
+				time.Sleep(30 * time.Second)
+				continue
+			}
+
+		default:
+			err = errors.New(resp.Status)
+			return
+
+		}
 	}
 
 	defer resp.Body.Close()

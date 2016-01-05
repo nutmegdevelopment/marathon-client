@@ -12,8 +12,9 @@ import (
 var (
 	url, file    string
 	user, pass   string
-	debug        bool = false
-	authenticate bool = false
+	debug        bool
+	authenticate bool
+	wait         bool
 )
 
 func init() {
@@ -22,6 +23,7 @@ func init() {
 	flag.StringVar(&user, "u", "", "Username for basic auth")
 	flag.StringVar(&pass, "p", "", "Password for basic auth")
 	flag.BoolVar(&debug, "d", false, "Debug output")
+	flag.BoolVar(&wait, "w", false, "Wait for existing deployments")
 
 	flag.Parse()
 
