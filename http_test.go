@@ -95,19 +95,19 @@ func TestDeployApplication(t *testing.T) {
 
 			// This isn't actually an error, but we want
 			// to catch places where we GET the wrong url.
-			if r.URL.Path == appEndPoint {
+			if r.URL.Path == appPath {
 				http.Error(w, "Not found", 500)
 			}
 
-			if r.URL.Path == appEndPoint+"/new" {
+			if r.URL.Path == appPath+"/new" {
 				http.Error(w, "Not found", 404)
 			}
 
-			if r.URL.Path == groupEndPoint+"/new" {
+			if r.URL.Path == groupPath+"/new" {
 				http.Error(w, "Not found", 404)
 			}
 
-			if r.URL.Path == appEndPoint+"/old" {
+			if r.URL.Path == appPath+"/old" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprintf(w, "%s\r\n", `{"id":"/old"}`)
@@ -115,30 +115,30 @@ func TestDeployApplication(t *testing.T) {
 
 		case "PUT":
 
-			if r.URL.Path == appEndPoint+"/new" {
+			if r.URL.Path == appPath+"/new" {
 				// Marathon doesn't actually error here, but we want
 				// to conform to the strict API for future compat.
 				http.Error(w, "Error", 500)
 			}
 
-			if r.URL.Path == groupEndPoint+"/new" {
+			if r.URL.Path == groupPath+"/new" {
 				http.Error(w, "Error", 500)
 			}
 
-			if r.URL.Path == appEndPoint+"/old" {
+			if r.URL.Path == appPath+"/old" {
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(putResponse)
 			}
 
 		case "POST":
 
-			if r.URL.Path == appEndPoint {
+			if r.URL.Path == appPath {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(201)
 				w.Write(postResponse)
 			}
 
-			if r.URL.Path == groupEndPoint {
+			if r.URL.Path == groupPath {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(201)
 				w.Write(postResponse)

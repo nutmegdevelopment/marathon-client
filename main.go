@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	url, file    string
+	rawurl, file string
 	user, pass   string
 	debug        bool
 	authenticate bool
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&url, "m", "", "Marathon URL")
+	flag.StringVar(&rawurl, "m", "", "Marathon URL")
 	flag.StringVar(&file, "f", "", "Job file")
 	flag.StringVar(&user, "u", "", "Username for basic auth")
 	flag.StringVar(&pass, "p", "", "Password for basic auth")
@@ -111,13 +111,13 @@ func (j Job) Data() ([]byte, error) {
 }
 
 func main() {
-	if url == "" {
+	if rawurl == "" {
 		log.Fatal("Marathon URL (-m) is required")
 	}
 
-	if url[0:4] != "http" {
+	if rawurl[0:4] != "http" {
 		// default to http
-		url = "http://" + url
+		rawurl = "http://" + rawurl
 	}
 
 	if file == "" {
@@ -147,7 +147,7 @@ func main() {
 	// Exit cleanly
 	defer close(rawEvents)
 
-	err = EventListener(url, rawEvents)
+	err = EventListener(rawurl, rawEvents)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -156,13 +156,13 @@ func main() {
 	go eventBus(rawEvents, events)
 
 	// Start listening for events
-	err = EventListener(url, rawEvents)
+	err = EventListener(rawurl, rawEvents)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create the deployment job
-	id, err := DeployApplication(url, job)
+	id, err := DeployApplication(rawurl, job)
 	if err != nil {
 		log.Fatal(err)
 	}

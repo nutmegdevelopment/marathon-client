@@ -137,10 +137,6 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 
 	var method string
 
-	if !wait {
-		jobUrl.RawQuery = "force=true"
-	}
-
 	resp, err := client.Do(req)
 	if err != nil {
 		return
@@ -153,6 +149,10 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 		}
 		method = "PUT"
 		jobUrl.Path += job.Id()
+
+		if !wait {
+			jobUrl.RawQuery = "force=true"
+		}
 
 	// New job
 	case 404:
@@ -183,6 +183,7 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 		req.SetBasicAuth(user, pass)
 	}
 
+Loop:
 	for {
 		resp, err = client.Do(req)
 		if err != nil {
@@ -192,10 +193,10 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 		switch resp.StatusCode {
 
 		case 200:
-			break
+			break Loop
 
 		case 201:
-			break
+			break Loop
 
 		case 409:
 			if wait {
