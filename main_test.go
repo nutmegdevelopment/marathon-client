@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var testJson = `
@@ -15,6 +16,14 @@ var testJson = `
 
 var testBadJson = `
 {
+	"cmd": "env && sleep 300",
+	"args": ["/bin/sh", "-c", "env && sleep 300"]
+}
+`
+
+var testEmptyIDJson = `
+{
+	"id": "",
 	"cmd": "env && sleep 300",
 	"args": ["/bin/sh", "-c", "env && sleep 300"]
 }
@@ -74,6 +83,11 @@ func TestNewJob(t *testing.T) {
 	j, err = NewJob([]byte(testBadJson))
 	if err == nil {
 		t.Error("No error with missing ID")
+	}
+
+	j, err = NewJob([]byte(testEmptyIDJson))
+	if err == nil {
+		t.Error("No error with empty ID")
 	}
 
 	j, err = NewJob([]byte(testGroupJson))
