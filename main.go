@@ -78,6 +78,10 @@ func NewJob(data []byte) (j Job, err error) {
 		err = errors.New("Missing ID")
 		return
 	}
+	if j["id"] == "" {
+		err = errors.New("ID is empty")
+		return
+	}
 	switch j["id"].(type) {
 	case string:
 		return
