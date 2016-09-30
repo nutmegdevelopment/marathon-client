@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"time"
 )
@@ -25,6 +26,24 @@ const (
 var (
 	nameRexp, dataRexp *regexp.Regexp
 )
+
+type TaskHealthStatus struct {
+	App struct {
+		TaskStats struct {
+			WithLatestConfig struct {
+				Stats struct {
+					Counts map[string]int `json:"counts"`
+				} `json:"stats"`
+			} `json:"withLatestConfig"`
+			TotalSummary struct {
+				Stats struct {
+					Counts map[string]int `json:"counts"`
+				} `json:"stats"`
+			} `json:"totalSummary"`
+			StartedAfterLastScaling map[string]interface{} `json:"startedAfterLastScaling"`
+		} `json:"taskStats"`
+	} `json:"app"`
+}
 
 func init() {
 	nameRexp = regexp.MustCompile(`^event: ([[:graph:]]+)$`)
@@ -235,4 +254,53 @@ Loop:
 
 	return
 
+}
+
+func TaskHealth(id string) (err error) {
+	log.Println("Testing health of task...")
+	client := new(http.Client)
+
+	appURL, err := url.Parse(rawurl)
+	if err != nil {
+		return
+	}
+
+	appURL.Path = path.Join(appPath, id)
+	if err != nil {
+		return
+	}
+
+	req, err := http.NewRequest("GET", appURL.String(), nil)
+	req.Header.Add("Content-Type", "application/json")
+
+	if authenticate {
+		req.SetBasicAuth(user, pass)
+	}
+
+	q := req.URL.Query()
+	q.Add("embed", "taskStats")
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var p = new(TaskHealthStatus)
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		return
+	}
+
+	for k, v := range p.App.TaskStats.WithLatestConfig.Stats.Counts {
+		log.Println(k, v)
+	}
+
+	return
 }

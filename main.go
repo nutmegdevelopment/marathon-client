@@ -181,4 +181,10 @@ func main() {
 		log.Println("Deployment succeeded")
 		log.Printf("%s: %6.2f %s\n", "Duration", dur.Seconds(), "seconds")
 	}
+
+	err = TaskHealth(job.Id())
+	if err != nil {
+		log.Println("Task not healthy yet: ", err)
+	}
+
 }
