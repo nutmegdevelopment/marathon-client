@@ -15,6 +15,7 @@ Usage of ./marathon-client:
 | -m   | Marathon URL |
 | -u   | Username for basic auth |
 | -p   | Password for basic auth |
+| -force | Force deploy over existing deployment |
 
 Note that Job file can be set to "-" to read from STDIN.
 
