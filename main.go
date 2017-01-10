@@ -14,7 +14,7 @@ var (
 	user, pass   string
 	debug        bool
 	authenticate bool
-	wait         bool
+	force        bool
 )
 
 func init() {
