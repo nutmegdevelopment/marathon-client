@@ -150,7 +150,7 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 		method = "PUT"
 		jobUrl.Path += job.Id()
 
-		if !wait {
+		if force {
 			jobUrl.RawQuery = "force=true"
 		}
 
@@ -199,7 +199,7 @@ Loop:
 			break Loop
 
 		case 409:
-			if wait {
+			if !force {
 				time.Sleep(30 * time.Second)
 				continue
 			}
