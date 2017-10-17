@@ -17,7 +17,7 @@ type appFailures struct {
 }
 
 func (a *appFailures) print() string {
-	str := "Reason(s):"
+	str := "Failure reason(s):"
 	for i := range a.apps {
 		str = fmt.Sprintf("%s\nApplication: %s\nAction: %s\n",
 			str, a.apps[i], a.actions[i])

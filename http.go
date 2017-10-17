@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -163,7 +164,7 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 
 	// Error, abort
 	default:
-		err = errors.New(resp.Status)
+		err = fmt.Errorf("Unexpected response code. HTTP status code: %s", resp.Status)
 		return
 	}
 
@@ -205,8 +206,7 @@ Loop:
 			}
 
 		default:
-			err = errors.New(resp.Status)
-			return
+			break Loop
 
 		}
 	}
@@ -214,6 +214,11 @@ Loop:
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		return
+	}
+
+	if resp.StatusCode > 399 {
+		err = fmt.Errorf("ERROR - marathon returned an error response. HTTP status: %s, message: %s", resp.Status, string(body))
 		return
 	}
 
