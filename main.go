@@ -15,6 +15,7 @@ var (
 	debug        bool
 	authenticate bool
 	force        bool
+	delete       bool
 )
 
 func init() {
@@ -24,7 +25,7 @@ func init() {
 	flag.StringVar(&pass, "p", "", "Password for basic auth")
 	flag.BoolVar(&debug, "d", false, "Debug output")
 	flag.BoolVar(&force, "force", false, "Force deploy over any existing deployments")
-
+	flag.BoolVar(&delete, "delete", false, "Delete an existing application")
 	flag.Parse()
 
 	if user != "" && pass != "" {
@@ -63,8 +64,6 @@ func eventBus(in <-chan RawEvent, out chan<- Event) {
 			}
 		}
 	}
-
-	return
 }
 
 type Job map[string]interface{}
