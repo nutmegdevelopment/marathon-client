@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var testNewApp = `
@@ -83,6 +84,7 @@ func TestDeployApplication(t *testing.T) {
 
 		putResponse := []byte(`{"deploymentId": "867ed450-f6a8-4d33-9b0e-e11c5513990b"}`)
 		postResponse := []byte(`{"deployments":[{"id": "867ed450-f6a8-4d33-9b0e-e11c5513990b"}]}`)
+		deleteResponse := []byte(`{"deploymentId": "123099a7-c4b3-4f62-bbf0-50fde7709911"}`)
 
 		// Ensure that the correct header is received
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -144,6 +146,12 @@ func TestDeployApplication(t *testing.T) {
 				w.Write(postResponse)
 			}
 
+		case "DELETE":
+			if r.URL.Path == appPath+"/old" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(200)
+				w.Write(deleteResponse)
+			}
 		}
 
 	}))
@@ -184,5 +192,33 @@ func TestDeployApplication(t *testing.T) {
 	}
 
 	assert.Equal(t, "867ed450-f6a8-4d33-9b0e-e11c5513990b", id)
+
+	// Delete application
+	delete = true
+
+	j, err = NewJob([]byte(testOldApp))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id, err = DeployApplication(ts.URL, j)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, "123099a7-c4b3-4f62-bbf0-50fde7709911", id)
+
+	// Delete non-existing application
+	// Set again for clarity
+	delete = true
+
+	j, err = NewJob([]byte(testNewApp))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = DeployApplication(ts.URL, j)
+
+	assert.Error(t, err)
 
 }

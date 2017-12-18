@@ -146,9 +146,15 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 	// Existing job found, update it
 	case 200:
 		if debug {
-			log.Println("Existing job found, updating")
+			log.Println("Existing job found")
 		}
-		method = "PUT"
+
+		if delete {
+			method = "DELETE"
+		} else {
+			method = "PUT"
+		}
+
 		jobUrl.Path += job.Id()
 
 		if force {
@@ -157,7 +163,13 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 
 	// New job
 	case 404:
+		if delete {
+			err = fmt.Errorf("Job does not exist, cannot delete. HTTP status code: %s", resp.Status)
+			return
+		}
+
 		if debug {
+
 			log.Println("Creating new job")
 		}
 		method = "POST"
