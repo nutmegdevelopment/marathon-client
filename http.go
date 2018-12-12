@@ -185,22 +185,26 @@ func DeployApplication(rawurl string, job Job) (deploymentId string, err error) 
 		return
 	}
 
-	req, err = http.NewRequest(method, jobUrl.String(), bytes.NewReader(data))
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	if authenticate {
-		req.SetBasicAuth(user, pass)
-	}
-
 Loop:
 	for {
+		req, err = http.NewRequest(method, jobUrl.String(), bytes.NewReader(data))
+		if err != nil {
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+
+		if authenticate {
+			req.SetBasicAuth(user, pass)
+		}
+
 		resp, err = client.Do(req)
 		if err != nil {
 			return
+		}
+
+		if debug {
+			log.Println(fmt.Sprintf("Deploy request completed. response code '%s'", resp.Status))
 		}
 
 		switch resp.StatusCode {
@@ -212,10 +216,10 @@ Loop:
 			break Loop
 
 		case 409:
-			if !force {
-				time.Sleep(30 * time.Second)
-				continue
-			}
+			// HTTP 409 Conflict - most likely ongoing deployment
+			log.Println("Conflict with existing deployment, retry in 30s")
+			time.Sleep(30 * time.Second)
+			continue
 
 		default:
 			break Loop
